@@ -1,0 +1,10 @@
+config {
+    type: "table",
+    schema: "data_clean",
+}
+
+select
+  date attendance_date,
+  name as staff_name
+from `npo-pigeon.data_lake.staff_attendance_lake`
+where date is not null or name is not null

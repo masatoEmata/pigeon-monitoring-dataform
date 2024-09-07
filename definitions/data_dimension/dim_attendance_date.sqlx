@@ -1,0 +1,40 @@
+config {
+    type: "table",
+    schema: "data_dimension",
+}
+
+with
+-- 当日含む1+N日間の集計ができるようにするため、N日前の日付を取得する
+lag_event_date as (
+  select
+    attendance_date,
+    lag(attendance_date, 2) over(order by attendance_date) as attendance_before_2_date,
+    lag(attendance_date, 4) over(order by attendance_date) as attendance_before_4_date,
+    lag(attendance_date, 6) over(order by attendance_date) as attendance_before_6_date,
+    lag(attendance_date, 8) over(order by attendance_date) as attendance_before_8_date,
+  from ${ref("cln_attendance_date")}
+)
+
+-- N日前の日付がNULLの場合、`attendance_before_*_date`がnullになるので、null埋めする
+, replace_null as (
+  select
+    attendance_date,
+    coalesce(attendance_before_2_date, date('2000-01-01')) as attendance_before_2_date,
+    coalesce(attendance_before_4_date, date('2000-01-01')) as attendance_before_4_date,
+    coalesce(attendance_before_6_date, date('2000-01-01')) as attendance_before_6_date,
+    coalesce(attendance_before_8_date, date('2000-01-01')) as attendance_before_8_date,
+  from lag_event_date
+)
+
+, final as (
+  select
+    attendance_date,
+    attendance_before_2_date,
+    attendance_before_4_date,
+    attendance_before_6_date,
+    attendance_before_8_date,
+  from replace_null
+)
+
+select *
+from final

@@ -1,0 +1,7 @@
+config {
+    type: "table",
+    schema: "data_clean",
+}
+
+select distinct attendance_date
+from ${ref("cln_staff_attendance")}

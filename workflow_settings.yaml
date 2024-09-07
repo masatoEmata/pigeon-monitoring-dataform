@@ -1,5 +1,5 @@
 defaultProject: npo-pigeon
 defaultLocation: asia-northeast1
-defaultDataset: dataform
+defaultDataset: data_mart
 defaultAssertionDataset: dataform_assertions
 dataformCoreVersion: 3.0.0

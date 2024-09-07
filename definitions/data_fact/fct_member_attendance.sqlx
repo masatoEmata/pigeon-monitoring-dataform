@@ -1,0 +1,73 @@
+config {
+    type: "table",
+    schema: "data_fact",
+}
+
+with
+load_cln_staff_attendance as (
+    select
+        attendance_date,
+        staff_name
+    from ${ref("cln_staff_attendance")}
+)
+
+, load_dim_attendance_date as (
+    select
+        attendance_date,
+        attendance_before_2_date,
+        attendance_before_4_date,
+        attendance_before_6_date,
+        attendance_before_8_date
+    from ${ref("dim_attendance_date")}
+)
+
+, count_recent_attendance as (
+    select
+        attendance.attendance_date,
+        attendance.staff_name,
+        sum(
+            case when attendance.attendance_date >= date_master.attendance_before_2_date then 1 else 0 end
+        ) over (
+            partition by attendance.staff_name
+            order by attendance.attendance_date
+            rows between 2 preceding and current row
+        ) as count_attendance_in_3_events,
+        sum(
+            case when attendance.attendance_date >= date_master.attendance_before_4_date then 1 else 0 end
+        ) over (
+            partition by attendance.staff_name
+            order by attendance.attendance_date
+            rows between 4 preceding and current row
+        ) as count_attendance_in_5_events,
+        sum(
+            case when attendance.attendance_date >= date_master.attendance_before_6_date then 1 else 0 end
+        ) over (
+            partition by attendance.staff_name
+            order by attendance.attendance_date
+            rows between 6 preceding and current row
+        ) as count_attendance_in_7_events,
+        sum(
+            case when attendance.attendance_date >= date_master.attendance_before_8_date then 1 else 0 end
+        ) over (
+            partition by attendance.staff_name
+            order by attendance.attendance_date
+            rows between 8 preceding and current row
+        ) as count_attendance_in_9_events,
+    from load_cln_staff_attendance as attendance
+    left outer join load_dim_attendance_date as date_master
+        on date_master.attendance_date = attendance.attendance_date
+)
+
+, final as (
+    select
+        attendance_date,
+        staff_name,
+        count_attendance_in_3_events,
+        count_attendance_in_5_events,
+        count_attendance_in_7_events,
+        count_attendance_in_9_events,
+    from count_recent_attendance
+)
+
+select *
+from final
